@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>에담 마을별 성경읽기 챌린지</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --text:#1f2937; --sub:#6b7280; --brand:#3b82f6; --line:#e5e7eb;
+      /* 읽음 표시 빨간색 계열 */
+      --read-bg:#fee2e2; --read-bd:#fecaca; --read-tx:#b91c1c;
+      --today:#3b82f6; --total:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.04)}
+    .header{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+    h1{font-size:22px;margin:0;color:var(--brand)}
+    .sub{color:var(--sub);font-size:14px}
+    .content{padding:20px 24px}
+    label{font-size:13px;color:var(--sub)}
+    select,input,button{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:white;font-size:14px}
+    button{background:var(--brand);color:white;border:none;cursor:pointer}
+    button.ghost{background:white;color:var(--text);border:1px solid var(--line)}
+    button.slim{height:32px;padding:0 10px}
+    button:active{transform:translateY(1px)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px}
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    .search{flex:1;min-width:220px}
+
+    /* 책 카드 */
+    .books{display:grid;grid-template-columns:repeat(1,1fr);gap:10px}
+    @media (min-width:820px){.books{grid-template-columns:repeat(2,1fr)}}
+    @media (min-width:1080px){.books{grid-template-columns:repeat(3,1fr)}}
+    .book{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+    .book-h{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+    .bname{font-weight:700}
+    .bmeta{font-size:12px;color:var(--sub)}
+    .chapters{padding:10px 12px}
+    .grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+    .chk{position:relative}
+    .chk input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .pill{display:flex;align-items:center;justify-content:center;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;color:#374151}
+    /* 읽음=빨간색 */
+    .pill.done{background:var(--read-bg);border-color:var(--read-bd);color:var(--read-tx)}
+
+    .stats{display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap}
+    .sum{padding:6px 10px;background:#eef2ff;border-radius:999px;color:#3b82f6;font-weight:700;font-size:13px}
+    .hint{font-size:12px;color:var(--sub)}
+    footer{padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+
+    /* 마을/회원 박스 */
+    .pane{display:grid;grid-template-columns:1fr;gap:12px}
+    @media (min-width:920px){.pane{grid-template-columns:380px 1fr}}
+    .panel{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px}
+    .panel h3{margin:6px 0 10px;font-size:16px;color:#111827}
+    .list{display:flex;flex-wrap:wrap;gap:6px}
+    .tag{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#f9fafb;font-size:12px}
+
+    /* 차트 */
+    .chart{width:100%;height:240px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px}
+    .legend{display:flex;gap:10px;align-items:center;margin:6px 0 0 4px}
+    .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+    .leader{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-top:1px solid var(--line);font-size:14px}
+    th{background:#f9fafb;text-align:left}
+    .right{text-align:right}
+    .empty{color:var(--sub);font-size:13px;padding:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>에담 마을별 성경읽기 챌린지</h1>
+          <div class="sub">책 목록은 기본 접힘. 책 제목을 클릭하면 장 목록이 자동으로 펼쳐져요. (3단계에서 DB 저장 연결)</div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label for="village">마을 선택</label>
+            <select id="village">
+              <option>성경읽기마을</option>
+              <option>찬양마을</option>
+              <option>헌신마을</option>
+              <option>말씀묵상기도마을</option>
+            </select>
+          </div>
+          <div class="col">
+            <label for="member">활동 사용자</label>
+            <select id="member"><option value="">(먼저 등록해요)</option></select>
+          </div>
+          <div class="col">
+            <label for="newMember">이름 등록</label>
+            <div class="row">
+              <input id="newMember" placeholder="예: 한별" />
+              <button id="addMember">등록</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- 상단: 마을/회원 관리 & 차트/리더보드 -->
+        <div class="pane">
+          <div class="panel">
+            <h3>마을 멤버</h3>
+            <div id="members" class="list empty">아직 등록된 멤버가 없어요.</div>
+          </div>
+          <div class="panel">
+            <h3>마을별 읽기 순위 — 오늘 vs 누적</h3>
+            <div class="chart">
+              <svg id="villageChart" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+              <div class="legend">
+                <span class="dot" style="background:var(--today)"></span><span class="hint">오늘</span>
+                <span class="dot" style="background:var(--total)"></span><span class="hint">누적</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h3>개인별 리더보드(오늘)</h3>
+          <div class="leader">
+            <table id="leaderboard">
+              <thead><tr><th>순위</th><th>이름</th><th>마을</th><th class="right">오늘(장)</th></tr></thead>
+              <tbody><tr><td colspan="4" class="empty">기록이 없어요. 장을 체크하면 나타나요!</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 검색/툴바 -->
+        <div class="toolbar" style="margin-top:12px">
+          <input id="search" class="search" placeholder="책 이름 빠르게 찾기 (예: 시편, 요한복음)" />
+          <button id="expandAll" class="ghost slim">모두 펼치기</button>
+          <button id="collapseAll" class="ghost slim">모두 접기</button>
+          <button id="clearAll" class="ghost slim">오늘 체크 전체 해제</button>
+        </div>
+
+        <!-- 구약/신약 책 카드 -->
+        <div class="section">
+          <h2>구약(39권)</h2>
+          <div id="ot" class="books"></div>
+        </div>
+        <div class="section">
+          <h2>신약(27권)</h2>
+          <div id="nt" class="books"></div>
+        </div>
+
+        <div class="stats">
+          <span class="sum" id="count">오늘 총: 0장</span>
+          <span class="hint">※ 현재는 브라우저 메모리만 사용해요. 새로고침하면 초기화됩니다.</span>
+        </div>
+      </div>
+
+      <footer>
+        <span class="hint">v0.5 그래프(오늘·누적) · 멤버 등록 · 장별 체크(빨간색) · 리더보드</span>
+        <span class="hint">3단계에서 Firebase(DB) 연결 예정</span>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // ===== 66권 & 장수 =====
+    const BOOKS = {
+      OT:[
+        ['창세기',50],['출애굽기',40],['레위기',27],['민수기',36],['신명기',34],
+        ['여호수아',24],['사사기',21],['룻기',4],['사무엘상',31],['사무엘하',24],
+        ['열왕기상',22],['열왕기하',25],['역대상',29],['역대하',36],['에스라',10],
+        ['느헤미야',13],['에스더',10],['욥기',42],['시편',150],['잠언',31],
+        ['전도서',12],['아가',8],['이사야',66],['예레미야',52],['예레미야애가',5],
+        ['에스겔',48],['다니엘',12],['호세아',14],['요엘',3],['아모스',9],
+        ['오바댜',1],['요나',4],['미가',7],['나훔',3],['하박국',3],
+        ['스바냐',3],['학개',2],['스가랴',14],['말라기',4]
+      ],
+      NT:[
+        ['마태복음',28],['마가복음',16],['누가복음',24],['요한복음',21],['사도행전',28],
+        ['로마서',16],['고린도전서',16],['고린도후서',13],['갈라디아서',6],['에베소서',6],
+        ['빌립보서',4],['골로새서',4],['데살로니가전서',5],['데살로니가후서',3],['디모데전서',6],
+        ['디모데후서',4],['디도서',3],['빌레몬서',1],['히브리서',13],['야고보서',5],
+        ['베드로전서',5],['베드로후서',3],['요한일서',5],['요한이서',1],['요한삼서',1],
+        ['유다서',1],['요한계시록',22]
+      ]
+    };
+
+    // ===== 상태(state): 오늘/누적을 분리 관리 =====
+    const initialVillages = ['성경읽기마을','찬양마을','헌신마을','말씀묵상기도마을'];
+    const state = {
+      // 오늘 데이터 (체크 해제 시 줄어듦)
+      today: Object.fromEntries(initialVillages.map(v=>[v,{members:{}}])),
+      // 누적 데이터 (체크 해제해도 감소하지 않음 — 데모용)
+      total: Object.fromEntries(initialVillages.map(v=>[v,{members:{}}])),
+      activeVillage: '성경읽기마을',
+      activeMember: ''
+    };
+
+    const elVillage = document.getElementById('village');
+    const elMember = document.getElementById('member');
+    const elNewMember = document.getElementById('newMember');
+    const elAddMember = document.getElementById('addMember');
+    const membersBox = document.getElementById('members');
+    const countEl = document.getElementById('count');
+    const searchInput = document.getElementById('search');
+
+    // 유틸
+    function ensureMember(layer){
+      const bucket = state[layer][state.activeVillage];
+      if(!state.activeMember){ alert('먼저 활동 사용자를 선택/등록해 주세요!'); return null; }
+      if(!bucket.members[state.activeMember]) bucket.members[state.activeMember] = { books:{} };
+      return bucket.members[state.activeMember];
+    }
+
+    function addMemberIfNeeded(name){
+      const layers=['today','total'];
+      layers.forEach(layer=>{
+        const bucket = state[layer][state.activeVillage];
+        if(!bucket.members[name]) bucket.members[name] = { books:{} };
+      });
+    }
+
+    function saveChapter(book, chapter, checked){
+      // 오늘: add/remove
+      const mToday = ensureMember('today');
+      if(!mToday) return;
+      const setT = mToday.books[book] || new Set();
+      if(checked) setT.add(chapter); else setT.delete(chapter);
+      mToday.books[book] = setT;
+      // 누적: add만 (해제해도 줄지 않음)
+      const mTotal = ensureMember('total');
+      const setTT = mTotal.books[book] || new Set();
+      if(checked) setTT.add(chapter);
+      mTotal.books[book] = setTT;
+    }
+
+    function getMemberTotal(layer, village, memberName){
+      const m = state[layer][village].members[memberName];
+      if(!m) return 0;
+      let sum = 0; for(const book in m.books){ sum += (m.books[book] instanceof Set)? m.books[book].size : 0; }
+      return sum;
+    }
+
+    // 멤버 등록/선택 UI
+    function refreshMemberList(){
+      const members = Object.keys(state.today[state.activeVillage].members);
+      membersBox.innerHTML = '';
+      if(members.length===0){ membersBox.classList.add('empty'); membersBox.textContent='아직 등록된 멤버가 없어요.'; }
+      else{
+        membersBox.classList.remove('empty');
+        members.forEach(m=>{ const t=document.createElement('span'); t.className='tag'; t.textContent=m; membersBox.appendChild(t); });
+      }
+      elMember.innerHTML = '<option value="">(활동 사용자 선택)</option>' + members.map(m=>`<option>${m}</option>`).join('');
+      if(members.includes(state.activeMember)) elMember.value = state.activeMember; else elMember.value='';
+    }
+
+    elVillage.addEventListener('change',()=>{ state.activeVillage = elVillage.value; refreshMemberList(); loadActiveMemberView(); drawVillageChart(); drawLeaderboard(); });
+    elMember.addEventListener('change',()=>{ state.activeMember = elMember.value; loadActiveMemberView(); drawVillageChart(); drawLeaderboard(); });
+
+    elAddMember.addEventListener('click',()=>{
+      const name = elNewMember.value.trim();
+      if(!name) return alert('이름을 입력해 주세요!');
+      addMemberIfNeeded(name);
+      elNewMember.value='';
+      state.activeMember = name;
+      refreshMemberList(); loadActiveMemberView(); drawVillageChart(); drawLeaderboard();
+    });
+
+    // ===== 책 카드 생성: 처음엔 모두 접힘 (전체/해제 버튼 제거) =====
+    const otBox = document.getElementById('ot');
+    const ntBox = document.getElementById('nt');
+    const cards = [];
+
+    function createBookCard(name, chapters){
+      const card = document.createElement('div');
+      card.className = 'book';
+      card.dataset.name = name;
+
+      const head = document.createElement('div');
+      head.className = 'book-h';
+      head.innerHTML = `
+        <div>
+          <div class="bname">${name}</div>
+          <div class="bmeta">총 ${chapters}장 · <span class="bcount">0</span>장 체크(오늘)</div>
+        </div>`;
+
+      const body = document.createElement('div');
+      body.className = 'chapters';
+      body.style.display='none'; // 기본 접힘
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+
+      const checks = [];
+      for(let i=1;i<=chapters;i++){
+        const cell = document.createElement('div');
+        cell.className = 'chk';
+        cell.innerHTML = `<div class="pill">${i}</div><input type="checkbox" aria-label="${name} ${i}장">`;
+        const input = cell.querySelector('input');
+        const pill = cell.querySelector('.pill');
+        input.addEventListener('change',()=>{
+          pill.classList.toggle('done', input.checked);
+          saveChapter(name, i, input.checked);
+          updateBookCount(card);
+          updateTotalsUI();
+        });
+        grid.appendChild(cell);
+        checks.push({input,pill,idx:i});
+      }
+      body.appendChild(grid);
+
+      // 헤더 클릭 시 펼침/접힘
+      head.addEventListener('click',(e)=>{
+        body.style.display = body.style.display==='none' ? 'block' : 'none';
+      });
+
+      card.appendChild(head);
+      card.appendChild(body);
+      card._checks = checks;
+      cards.push(card);
+      return card;
+    }
+
+    // 카드 렌더링
+    BOOKS.OT.forEach(([n,c])=> otBox.appendChild(createBookCard(n,c)) );
+    BOOKS.NT.forEach(([n,c])=> ntBox.appendChild(createBookCard(n,c)) );
+
+    // 검색
+    searchInput.addEventListener('input',()=>{
+      const q = searchInput.value.trim();
+      cards.forEach(card=>{
+        const show = !q || card.dataset.name.includes(q);
+        card.style.display = show? 'block':'none';
+      });
+    });
+
+    // 툴바
+    document.getElementById('expandAll').addEventListener('click',()=>{
+      document.querySelectorAll('.chapters').forEach(el=>el.style.display='block');
+    });
+    document.getElementById('collapseAll').addEventListener('click',()=>{
+      document.querySelectorAll('.chapters').forEach(el=>el.style.display='none');
+    });
+    document.getElementById('clearAll').addEventListener('click',()=>{
+      if(!state.activeMember) return alert('먼저 활동 사용자를 선택/등록해 주세요!');
+      cards.forEach(card=>{
+        card._checks.forEach(c=>{ if(c.input.checked){ c.input.checked=false; c.pill.classList.remove('done'); saveChapter(card.dataset.name,c.idx,false);} });
+        updateBookCount(card);
+      });
+      updateTotalsUI();
+    });
+
+    function updateBookCount(card){
+      const m = state.today[state.activeVillage].members[state.activeMember];
+      const set = m?.books[card.dataset.name];
+      const n = set? set.size : 0;
+      const span = card.querySelector('.bcount');
+      if(span) span.textContent = n;
+    }
+
+    function loadActiveMemberView(){
+      // 체크 UI를 활성 회원의 오늘 데이터로 동기화
+      cards.forEach(card=>{
+        const m = state.today[state.activeVillage].members[state.activeMember];
+        const set = m?.books[card.dataset.name] || new Set();
+        card._checks.forEach(({input,pill,idx})=>{
+          const val = set.has(idx);
+          input.checked = val;
+          pill.classList.toggle('done', val);
+        });
+        updateBookCount(card);
+      });
+      updateTotalsUI();
+    }
+
+    // 총합(오늘) UI
+    function updateTotalsUI(){
+      const total = state.activeMember ? getMemberTotal('today', state.activeVillage, state.activeMember) : 0;
+      countEl.textContent = `오늘 총: ${total}장`;
+      drawVillageChart();
+      drawLeaderboard();
+    }
+
+    // ==== 마을별 막대 그래프 (오늘 vs 누적) ====
+    const chart = document.getElementById('villageChart');
+    function drawVillageChart(){
+      const W=640,H=220,P=32; // padding
+      const vnames = Object.keys(state.today);
+      const todayVals = vnames.map(v=>{
+        const members = state.today[v].members;
+        return Object.keys(members).reduce((acc, m)=> acc + getMemberTotal('today', v, m), 0);
+      });
+      const totalVals = vnames.map(v=>{
+        const members = state.total[v].members;
+        return Object.keys(members).reduce((acc, m)=> acc + getMemberTotal('total', v, m), 0);
+      });
+      const max = Math.max(1, ...todayVals, ...totalVals);
+      chart.setAttribute('viewBox',`0 0 ${W} ${H}`);
+      chart.innerHTML = '';
+      // x-axis
+      const axis = document.createElementNS('http://www.w3.org/2000/svg','line');
+      axis.setAttribute('x1',P); axis.setAttribute('y1',H-P); axis.setAttribute('x2',W-P); axis.setAttribute('y2',H-P); axis.setAttribute('stroke','#e5e7eb');
+      chart.appendChild(axis);
+      const slot = (W-2*P)/vnames.length;
+      const barW = slot*0.28; // 그룹 내 두 막대
+      vnames.forEach((v,i)=>{
+        const x0 = P + slot*i + (slot - barW*2 - 6)/2;
+        const h1 = (H-2*P) * (todayVals[i]/max);
+        const h2 = (H-2*P) * (totalVals[i]/max);
+        const y1 = H-P - h1; const y2 = H-P - h2;
+        const r1 = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        r1.setAttribute('x',x0); r1.setAttribute('y',y1); r1.setAttribute('width',barW); r1.setAttribute('height',h1);
+        r1.setAttribute('fill','var(--today)'); r1.setAttribute('rx','6'); chart.appendChild(r1);
+        const r2 = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        r2.setAttribute('x',x0+barW+6); r2.setAttribute('y',y2); r2.setAttribute('width',barW); r2.setAttribute('height',h2);
+        r2.setAttribute('fill','var(--total)'); r2.setAttribute('rx','6'); chart.appendChild(r2);
+        // labels
+        const lab = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lab.setAttribute('x', P + slot*i + slot/2); lab.setAttribute('y', H-P+14); lab.setAttribute('text-anchor','middle'); lab.setAttribute('font-size','10'); lab.setAttribute('fill','#6b7280'); lab.textContent = v;
+        chart.appendChild(lab);
+      });
+    }
+
+    // ==== 리더보드(개인별: 오늘) ====
+    const tbody = document.querySelector('#leaderboard tbody');
+    function drawLeaderboard(){
+      const rows = [];
+      for(const v of Object.keys(state.today)){
+        for(const m of Object.keys(state.today[v].members)){
+          rows.push({name:m,village:v,total:getMemberTotal('today',v,m)});
+        }
+      }
+      rows.sort((a,b)=> b.total - a.total || a.name.localeCompare(b.name));
+      tbody.innerHTML = '';
+      if(rows.length===0){
+        const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.className='empty'; td.textContent='기록이 없어요. 장을 체크하면 나타나요!'; tr.appendChild(td); tbody.appendChild(tr); return;
+      }
+      rows.forEach((r,idx)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${idx+1}</td><td>${r.name}</td><td>${r.village}</td><td class='right'>${r.total}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 초기 렌더
+    function refreshAll(){
+      // 초기 마을 셀렉트 동기화
+      document.getElementById('village').value = state.activeVillage;
+      refreshMemberList();
+      loadActiveMemberView();
+      drawVillageChart();
+      drawLeaderboard();
+    }
+
+    refreshAll();
+  </script>
+</body>
+</html>
